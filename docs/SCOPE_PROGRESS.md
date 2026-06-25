@@ -62,6 +62,19 @@
 
 次のステップ(Agent 5またはAgent 10相当)で、実機Windows PCまたはWindows VM上での導入テストが必要。
 
+## 実機テストで発見・修正した不具合
+
+### 2026-06-25 1回目テスト
+- **環境**: テストPCにWSL/Ubuntuは未導入と確認(`wsl -l -v`の結果より。既存環境との衝突は今回は実害なし)
+- **発見した不具合**: `irm https://.../install.ps1 | iex` 実行時に以下のParserErrorで即失敗
+  ```
+  予期しない属性 'CmdletBinding' です。
+  式または ステートメントのトークン 'param' を使用できません。
+  ```
+  **原因**: `install.ps1`先頭に付けていたUTF-8 BOM(日本語の文字化け防止目的)が、HTTP経由で文字列として取得され`Invoke-Expression`に渡される際に`[CmdletBinding()]`/`param()`をスクリプトの先頭と認識できなくする。ファイルとして直接実行する場合は問題にならないが、`irm | iex`方式では致命的
+  **対応**: `install.ps1`のみBOMを除去(他のdot-sourceされるモジュールファイルはBOM付きのまま維持)。`PSScriptAnalyzerSettings.psd1`の`PSUseBOMForUnicodeEncodedFile`ルールを除外設定に追加し、CIでも矛盾しないようにした
+  **未確認の残課題**: BOM無しの`install.ps1`がローカル展開後(`& <path>\install.ps1`実行時)に日本語メッセージを正しく表示できるか(文字化けしないか)は次回テストで目視確認が必要
+
 ## 堅牢化対応(実機テスト前に実施)
 
 - **既存Ubuntu(WSL)との衝突回避**: 利用者がテスト予定PCに既存のUbuntu(WSL)環境を持っていることが判明したため、ディストリ名を汎用的な`Ubuntu`から専用名`BlueLamp`に変更。これにより既存環境を誤って「導入済み」と誤認して手を加えてしまう事故を防止
