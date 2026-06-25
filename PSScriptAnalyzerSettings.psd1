@@ -1,6 +1,9 @@
-@{
-    Severity = @('Error', 'Warning')
-    Rules    = @{
+﻿@{
+    Severity     = @('Error', 'Warning')
+    # 本プロジェクトはフロントUIなし・PowerShellコンソール出力のみが要件(requirements.md)。
+    # 色分けされた進捗表示が成功指標の一つのため、Write-Hostの使用を意図的に許可する
+    ExcludeRules = @('PSAvoidUsingWriteHost')
+    Rules        = @{
         PSAvoidUsingPositionalParameters = @{ Enabled = $true }
         PSUseConsistentIndentation       = @{ Enabled = $true; IndentationSize = 4 }
         PSUseConsistentWhitespace        = @{ Enabled = $true }
