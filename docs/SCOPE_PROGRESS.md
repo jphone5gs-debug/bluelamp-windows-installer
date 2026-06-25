@@ -20,7 +20,7 @@
 | Phase | 名称 | 担当 | 状態 |
 |-------|------|------|------|
 | 1 | 要件定義 | Agent 1 | [x] |
-| 2 | Git管理（GitHubリポジトリ作成） | Agent 2 | [~] ローカルGit整備完了。GitHubリポジトリ作成・初回pushはユーザー承認待ち |
+| 2 | Git管理（GitHubリポジトリ作成） | Agent 2 | [x] `jphone5gs-debug/bluelamp-windows-installer`として作成・push完了 |
 | 3 | フロントエンド基盤 | Agent 3 | [ ] スキップ(UIなし) |
 | 4 | ページ実装 | Agent 4 | [ ] スキップ(UIなし) |
 | 5 | 環境構築（検証用WSL/VM環境） | Agent 5 | [ ] 未実施(実機Windows/WSL環境が無いサンドボックスのため) |
