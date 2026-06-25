@@ -1,9 +1,10 @@
 ﻿#Requires -Version 5.1
 
 function Import-UbuntuDistro {
+    $distroPattern = [regex]::Escape($script:WslDistroName)
     $existing = (wsl.exe -l -v 2>$null) -replace "`0", ''
-    if ($existing | Select-String -Pattern '^\*?\s*Ubuntu\s' -Quiet) {
-        Write-InstallLog 'Ubuntuは既に導入済みです。'
+    if ($existing | Select-String -Pattern "^\*?\s*$distroPattern\s" -Quiet) {
+        Write-InstallLog "$($script:WslDistroName)は既に導入済みです。"
         return
     }
 
@@ -15,20 +16,20 @@ function Import-UbuntuDistro {
 
     # Canonical公式WSL rootfs配布元。バージョン固定(Ubuntu 24.04 LTS / noble)
     $rootfsUrl = 'https://cloud-images.ubuntu.com/wsl/releases/noble/current/ubuntu-noble-wsl-amd64-wsl.rootfs.tar.gz'
-    $installPath = Join-Path $env:LOCALAPPDATA 'BlueLampInstaller\WSL\Ubuntu'
+    $installPath = Join-Path $env:LOCALAPPDATA "BlueLampInstaller\WSL\$script:WslDistroName"
     $tarballPath = Join-Path $env:TEMP 'ubuntu-noble-wsl-amd64-wsl.rootfs.tar.gz'
 
     Write-InstallLog 'Ubuntuのrootfsをダウンロードしています(約340MB、回線速度により数分かかります)...'
-    try {
-        Invoke-WebRequest -Uri $rootfsUrl -OutFile $tarballPath -UseBasicParsing
-    } catch {
-        throw "Ubuntu rootfsのダウンロードに失敗しました ($rootfsUrl): $_"
-    }
+    Invoke-DownloadWithRetry -Uri $rootfsUrl -OutFile $tarballPath
 
+    # 前回の失敗で中途半端なインポート先が残っていると wsl --import が失敗するため、再試行前に掃除する
+    if (Test-Path $installPath) {
+        Remove-Item -Path $installPath -Recurse -Force
+    }
     New-Item -ItemType Directory -Path $installPath -Force | Out-Null
 
-    Write-InstallLog 'Ubuntuをインポートしています...'
-    wsl.exe --import Ubuntu $installPath $tarballPath --version 2
+    Write-InstallLog "$($script:WslDistroName)をインポートしています..."
+    wsl.exe --import $script:WslDistroName $installPath $tarballPath --version 2
     if ($LASTEXITCODE -ne 0) {
         throw "wsl --import に失敗しました (終了コード: $LASTEXITCODE)"
     }
@@ -56,15 +57,15 @@ BASHENV
 chown "$WSL_TARGET_USER:$WSL_TARGET_USER" "$USER_HOME/.bluelamp_bash_env"
 '@
 
-    $userSetupScript | wsl.exe -d Ubuntu -u root -- env "WSL_TARGET_USER=$script:WslUser" bash -s --
+    $userSetupScript | wsl.exe -d $script:WslDistroName -u root -- env "WSL_TARGET_USER=$script:WslUser" bash -s --
     if ($LASTEXITCODE -ne 0) {
-        throw "Ubuntu内の非対話ユーザー作成に失敗しました (終了コード: $LASTEXITCODE)"
+        throw "$($script:WslDistroName)内の非対話ユーザー作成に失敗しました (終了コード: $LASTEXITCODE)"
     }
 
     # wsl.confは起動時にのみ読まれるため、再起動して既定ユーザーを反映させる
-    wsl.exe --terminate Ubuntu
+    wsl.exe --terminate $script:WslDistroName
 
-    $whoami = (wsl.exe -d Ubuntu -- whoami 2>$null).Trim()
+    $whoami = (wsl.exe -d $script:WslDistroName -- whoami 2>$null).Trim()
     if ($whoami -ne $script:WslUser) {
         throw "既定ユーザーの切り替えに失敗しました (検出されたユーザー: '$whoami'、期待値: '$script:WslUser')"
     }

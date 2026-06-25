@@ -10,7 +10,7 @@ install_bluelamp_in_wsl() {
     fi
 
     log_info "BlueLampをインストールしています (npm install -g bluelamp)..."
-    if ! npm install -g bluelamp; then
+    if ! retry 3 npm install -g bluelamp; then
         log_error "npm install -g bluelamp に失敗しました"
         exit 1
     fi

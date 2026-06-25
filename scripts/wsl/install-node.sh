@@ -12,11 +12,19 @@ install_node_in_wsl() {
     local nvm_version="v0.40.1"
     local nvm_install_url="https://raw.githubusercontent.com/nvm-sh/nvm/${nvm_version}/install.sh"
 
-    log_info "nvm ${nvm_version} をインストールしています..."
-    if ! curl -fsSL "${nvm_install_url}" | bash; then
-        log_error "nvm ${nvm_version} のインストールに失敗しました (URLが404になっている可能性があります: ${nvm_install_url})"
+    log_info "nvm ${nvm_version} をダウンロードしています..."
+    if ! retry 3 curl -fsSL "${nvm_install_url}" -o /tmp/nvm-install.sh; then
+        log_error "nvm ${nvm_version} のダウンロードに失敗しました (URLが404になっている可能性があります: ${nvm_install_url})"
         exit 1
     fi
+
+    log_info "nvm ${nvm_version} をインストールしています..."
+    if ! bash /tmp/nvm-install.sh; then
+        log_error "nvm ${nvm_version} のインストールスクリプト実行に失敗しました"
+        rm -f /tmp/nvm-install.sh
+        exit 1
+    fi
+    rm -f /tmp/nvm-install.sh
 
     export NVM_DIR="${HOME}/.nvm"
     # shellcheck disable=SC1091

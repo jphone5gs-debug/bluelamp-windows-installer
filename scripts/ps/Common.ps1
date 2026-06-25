@@ -4,6 +4,8 @@ $script:StateDir = Join-Path $env:LOCALAPPDATA 'BlueLampInstaller'
 $script:StatePath = Join-Path $script:StateDir 'state.json'
 $script:WslUser = 'bluelamp'
 $script:WslBashEnvPath = "/home/$script:WslUser/.bluelamp_bash_env"
+# 汎用的な"Ubuntu"ではなく専用名にすることで、利用者が既に持つ別のUbuntu(WSL)環境と衝突しないようにする
+$script:WslDistroName = 'BlueLamp'
 
 function Write-InstallLog {
     param(
@@ -48,18 +50,49 @@ function Save-InstallState {
 }
 
 function Read-InstallState {
+    $reRunHint = 'irm https://raw.githubusercontent.com/jphone5gs-debug/bluelamp-windows-installer/main/install.ps1 | iex'
     if (-not (Test-Path $script:StatePath)) {
-        throw "状態ファイルが見つかりません ($script:StatePath)。インストーラーを最初から再実行してください: irm https://raw.githubusercontent.com/jphone5gs-debug/bluelamp-windows-installer/main/install.ps1 | iex"
+        throw "状態ファイルが見つかりません ($script:StatePath)。インストーラーを最初から再実行してください: $reRunHint"
     }
-    Get-Content -Raw -Path $script:StatePath | ConvertFrom-Json
+    try {
+        Get-Content -Raw -Path $script:StatePath | ConvertFrom-Json -ErrorAction Stop
+    } catch {
+        throw "状態ファイルの内容が壊れています ($script:StatePath)。ファイルを削除してインストーラーを最初から再実行してください: $reRunHint"
+    }
 }
 
 function Remove-InstallState {
     # 自動実行フローの内部クリーンアップであり対話確認の対象ではないため、ShouldProcessは実装しない
     [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '')]
     param()
-    if (Test-Path $script:StatePath) {
-        Remove-Item -Path $script:StatePath -Force
+    # 完了後の後始末であり、失敗しても動作の正しさには影響しないため警告のみで継続する
+    try {
+        if (Test-Path $script:StatePath) {
+            Remove-Item -Path $script:StatePath -Force -ErrorAction Stop
+        }
+    } catch {
+        Write-InstallLog "状態ファイルの削除に失敗しましたが、インストール自体は完了しています: $_" -IsError
+    }
+}
+
+function Invoke-DownloadWithRetry {
+    param(
+        [Parameter(Mandatory)] [string]$Uri,
+        [Parameter(Mandatory)] [string]$OutFile,
+        [int]$MaxAttempts = 3,
+        [int]$TimeoutSec = 600
+    )
+    for ($attempt = 1; $attempt -le $MaxAttempts; $attempt++) {
+        try {
+            Invoke-WebRequest -Uri $Uri -OutFile $OutFile -UseBasicParsing -TimeoutSec $TimeoutSec
+            return
+        } catch {
+            if ($attempt -eq $MaxAttempts) {
+                throw "ダウンロードに失敗しました ($Uri): $_"
+            }
+            Write-InstallLog "ダウンロードに失敗しました。再試行します ($attempt/$MaxAttempts): $Uri" -IsError
+            Start-Sleep -Seconds 5
+        }
     }
 }
 
@@ -79,9 +112,9 @@ function Invoke-WslScript {
     $content = (Get-Content -Raw -Path $commonPath) + "`n" + (Get-Content -Raw -Path $ScriptPath)
 
     if ($NeedsBashEnv) {
-        $content | wsl.exe -d Ubuntu -u $script:WslUser -- env "BASH_ENV=$script:WslBashEnvPath" bash -s --
+        $content | wsl.exe -d $script:WslDistroName -u $script:WslUser -- env "BASH_ENV=$script:WslBashEnvPath" bash -s --
     } else {
-        $content | wsl.exe -d Ubuntu -u $script:WslUser -- bash -s --
+        $content | wsl.exe -d $script:WslDistroName -u $script:WslUser -- bash -s --
     }
 
     if ($LASTEXITCODE -ne 0) {

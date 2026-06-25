@@ -13,11 +13,19 @@ install_claude_code_in_wsl() {
         return 0
     fi
 
-    log_info "Claude Code CLIをインストールしています..."
-    if ! curl -fsSL https://claude.ai/install.sh | bash; then
-        log_error "Claude Code CLIのインストールスクリプト実行に失敗しました"
+    log_info "Claude Code CLIをダウンロードしています..."
+    if ! retry 3 curl -fsSL https://claude.ai/install.sh -o /tmp/claude-install.sh; then
+        log_error "Claude Code CLIのインストールスクリプトのダウンロードに失敗しました"
         exit 1
     fi
+
+    log_info "Claude Code CLIをインストールしています..."
+    if ! bash /tmp/claude-install.sh; then
+        log_error "Claude Code CLIのインストールスクリプト実行に失敗しました"
+        rm -f /tmp/claude-install.sh
+        exit 1
+    fi
+    rm -f /tmp/claude-install.sh
 
     # 終了コードだけでなく実際に動作するかをここで確定させる(壊れたバイナリの早期検出)
     if ! claude --version >/dev/null 2>&1; then

@@ -9,3 +9,4 @@ Thumbs.db
 # ログ・一時状態ファイル
 *.log
 .appgenius_temp/
+.claude/
