@@ -67,7 +67,15 @@ if (-not $PSScriptRoot) {
         Write-FatalErrorAndExit $_
     }
 
-    & (Join-Path $repoPath 'install.ps1') @PSBoundParameters
+    # システムの実行ポリシーでローカル.ps1ファイルの実行が無効な場合があるため、
+    # schtasks再開タスクと同じ-ExecutionPolicy Bypassで新規プロセスとして起動する
+    # (irm | iexによる文字列実行自体は実行ポリシーの対象外だが、`&`でのローカルファイル実行は対象になる)
+    $installerPath = Join-Path $repoPath 'install.ps1'
+    if ($Resume) {
+        powershell.exe -NoProfile -ExecutionPolicy Bypass -File $installerPath -Resume
+    } else {
+        powershell.exe -NoProfile -ExecutionPolicy Bypass -File $installerPath
+    }
     exit $LASTEXITCODE
 }
 

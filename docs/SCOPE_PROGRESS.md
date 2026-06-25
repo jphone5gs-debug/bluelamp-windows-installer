@@ -73,7 +73,18 @@
   ```
   **原因**: `install.ps1`先頭に付けていたUTF-8 BOM(日本語の文字化け防止目的)が、HTTP経由で文字列として取得され`Invoke-Expression`に渡される際に`[CmdletBinding()]`/`param()`をスクリプトの先頭と認識できなくする。ファイルとして直接実行する場合は問題にならないが、`irm | iex`方式では致命的
   **対応**: `install.ps1`のみBOMを除去(他のdot-sourceされるモジュールファイルはBOM付きのまま維持)。`PSScriptAnalyzerSettings.psd1`の`PSUseBOMForUnicodeEncodedFile`ルールを除外設定に追加し、CIでも矛盾しないようにした
-  **未確認の残課題**: BOM無しの`install.ps1`がローカル展開後(`& <path>\install.ps1`実行時)に日本語メッセージを正しく表示できるか(文字化けしないか)は次回テストで目視確認が必要
+  **確認結果**: 修正後の再テストで日本語メッセージ(「インストーラー本体をローカルにダウンロードしています...」)は文字化けせず正常表示された
+
+### 2026-06-25 2回目テスト
+- **発見した不具合**: BOM修正後、ローカル展開した`install.ps1`を`& (Join-Path $repoPath 'install.ps1')`で直接呼び出した際に以下のエラーで失敗
+  ```
+  iex : このシステムではスクリプトの実行が無効になっているため、ファイル ...\install.ps1 を読み込むことができません。
+  CategoryInfo : セキュリティ エラー: (:) [Invoke-Expression]、PSSecurityException
+  FullyQualifiedErrorId : UnauthorizedAccess
+  ```
+  **原因**: `irm | iex`による文字列実行自体は実行ポリシーの対象外だが、`&`によるローカル.ps1ファイルの直接実行は対象になる。テストPCの実行ポリシーが既定の制限的な設定だったため失敗
+  **対応**: S-003(`Register-ResumeTask`)のタスクスケジューラ起動コマンドと同様に、`powershell.exe -NoProfile -ExecutionPolicy Bypass -File <path>`で新規プロセスとして起動するよう変更(システム全体の実行ポリシーは変更しない、このプロセス起動のみの一時的な許可)
+  **未確認の残課題**: 修正後の動作は次回テストで確認が必要
 
 ## 堅牢化対応(実機テスト前に実施)
 
