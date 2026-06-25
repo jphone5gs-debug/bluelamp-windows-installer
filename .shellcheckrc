@@ -1,0 +1,6 @@
+shell=bash
+severity=style
+enable=all
+
+# 行長120文字 / 関数100行以下 / ファイル700行以下 / 複雑度10以下は
+# shellcheck標準では直接強制できないため、PRレビュー時に目視確認する
