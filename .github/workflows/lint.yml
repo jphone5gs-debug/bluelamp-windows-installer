@@ -15,7 +15,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: ShellCheck
-        run: shellcheck --rcfile=.shellcheckrc scripts/wsl/*.sh
+        # ランナーのshellcheckが--rcfileに対応していない場合があるため、
+        # リポジトリルートの.shellcheckrcを自動検出させる(明示フラグ不要)
+        run: shellcheck scripts/wsl/*.sh
 
   psscriptanalyzer:
     runs-on: windows-latest
