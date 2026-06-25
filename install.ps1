@@ -11,7 +11,7 @@ $ErrorActionPreference = 'Stop'
 if (-not $PSScriptRoot) {
     # irm | iex 実行時は$PSScriptRootが無くscripts/配下を参照できない。
     # schtasksの/trにも実ファイルパスが必要なため、ローカルにリポジトリを展開して自分自身を再実行する。
-    $zipUrl = 'https://github.com/eva001/bluelamp-windows-installer/archive/refs/heads/main.zip'
+    $zipUrl = 'https://github.com/jphone5gs-debug/bluelamp-windows-installer/archive/refs/heads/main.zip'
     $localRoot = Join-Path $env:LOCALAPPDATA 'BlueLampInstaller'
     $repoPath = Join-Path $localRoot 'repo'
     $zipPath = Join-Path $localRoot 'repo.zip'

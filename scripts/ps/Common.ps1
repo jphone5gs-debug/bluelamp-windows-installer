@@ -49,7 +49,7 @@ function Save-InstallState {
 
 function Read-InstallState {
     if (-not (Test-Path $script:StatePath)) {
-        throw "状態ファイルが見つかりません ($script:StatePath)。インストーラーを最初から再実行してください: irm https://raw.githubusercontent.com/eva001/bluelamp-windows-installer/main/install.ps1 | iex"
+        throw "状態ファイルが見つかりません ($script:StatePath)。インストーラーを最初から再実行してください: irm https://raw.githubusercontent.com/jphone5gs-debug/bluelamp-windows-installer/main/install.ps1 | iex"
     }
     Get-Content -Raw -Path $script:StatePath | ConvertFrom-Json
 }

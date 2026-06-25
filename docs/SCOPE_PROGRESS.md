@@ -9,7 +9,7 @@
 - 自社DB: なし
 - フロントUI: なし
 - 動的変数: なし
-- 配布: マイ専用（GitHub公開リポジトリ `eva001/bluelamp-windows-installer`）
+- 配布: マイ専用（GitHub公開リポジトリ `jphone5gs-debug/bluelamp-windows-installer`）
 
 詳細は `docs/requirements.md` を参照。
 
@@ -66,7 +66,7 @@
 
 | サービス | アカウント | 備考 |
 |---------|-----------|------|
-| GitHub | [x] | ユーザー名 `eva001`（確認済み） |
+| GitHub | [x] | ユーザー名 `jphone5gs-debug`（Phase2実施時に`eva001`では作成不可と判明し変更） |
 | Claude.ai/Anthropic | [x] | 既存サブスクリプション、各PCで初回ログインのみ |
 | BlueLampポータル | [x] | 既存アカウント、各PCで初回ログインのみ |
 

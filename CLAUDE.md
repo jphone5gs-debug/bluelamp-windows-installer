@@ -9,11 +9,11 @@
   WSL内: bash（Ubuntu標準搭載）
   バックエンド/フロントエンド/DB: なし（決定論スクリプト型・#6相当、UIなし）
 
-配布先: GitHub公開リポジトリ `eva001/bluelamp-windows-installer`（mainブランチ、Raw Content経由）
+配布先: GitHub公開リポジトリ `jphone5gs-debug/bluelamp-windows-installer`（mainブランチ、Raw Content経由）
 
 最終実行コマンド（利用者がPowerShellを管理者として実行し1行貼り付け）:
 ```powershell
-irm https://raw.githubusercontent.com/eva001/bluelamp-windows-installer/main/install.ps1 | iex
+irm https://raw.githubusercontent.com/jphone5gs-debug/bluelamp-windows-installer/main/install.ps1 | iex
 ```
 
 ## 秘密情報の扱い

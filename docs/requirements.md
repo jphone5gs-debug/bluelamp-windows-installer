@@ -13,7 +13,7 @@
 - 動的変数: なし（固定処理。顧客ごとの出し分けは無い）
 - 種別: 該当なし（MCP型でもWeb型でもない。スクリプト配布型）
 - 配布: マイ専用（GitHub公開リポジトリでホスティング。テナント配信ではない）
-- 配布先: `https://github.com/eva001/bluelamp-windows-installer`（新規・public・mainブランチ）
+- 配布先: `https://github.com/jphone5gs-debug/bluelamp-windows-installer`（新規・public・mainブランチ）
 
 ### 通すPhase（12フェーズをスクリプト配布用に読み替え）
 
@@ -55,7 +55,7 @@
 1. PowerShellを**管理者として実行**
 2. 以下を1行貼り付けて実行:
    ```powershell
-   irm https://raw.githubusercontent.com/eva001/bluelamp-windows-installer/main/install.ps1 | iex
+   irm https://raw.githubusercontent.com/jphone5gs-debug/bluelamp-windows-installer/main/install.ps1 | iex
    ```
 3. （再起動が必要な場合）再起動後、自動的に処理が再開される
 4. Claude Codeのログイン画面が出たらブラウザでログイン
@@ -144,7 +144,7 @@ BlueLamp本体: npm経由 bluelampパッケージ（最新版）
 Claude Code CLI: Anthropic公式ネイティブインストーラー
 認証: 既存のClaude Code OAuthログイン／BlueLamp Interactive Loginをそのまま起動（独自実装なし）
 再起動継続: Windowsタスクスケジューラ（schtasks、ONLOGON、完了後自己削除）
-バージョン管理: Git/GitHub（リポジトリ eva001/bluelamp-windows-installer、public、mainブランチ）
+バージョン管理: Git/GitHub（リポジトリ jphone5gs-debug/bluelamp-windows-installer、public、mainブランチ）
 ```
 
 バックエンドサーバー・データベース・フロントエンドフレームワークは不要。
