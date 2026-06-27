@@ -12,6 +12,13 @@ function Write-FatalErrorAndExit {
     param($ErrorRecord)
     Write-Host "[BlueLampインストーラー] 失敗しました: $($ErrorRecord.Exception.Message)" -ForegroundColor Red
     Write-Host '[BlueLampインストーラー] もう一度同じコマンドを実行すれば、完了済みの手順はスキップして続きから再開します。' -ForegroundColor Yellow
+    # $script:LogPathはCommon.ps1 dot-source後に定義される。bootstrap失敗時は未定義のため存在確認する
+    if ($script:LogPath) {
+        try {
+            $ts = (Get-Date).ToString('yyyy-MM-dd HH:mm:ss')
+            Add-Content -Path $script:LogPath -Value "$ts [ERROR] 失敗しました: $($ErrorRecord.Exception.Message)" -Encoding UTF8 -ErrorAction SilentlyContinue
+        } catch {}
+    }
     exit 1
 }
 
@@ -72,9 +79,9 @@ if (-not $PSScriptRoot) {
     # (irm | iexによる文字列実行自体は実行ポリシーの対象外だが、`&`でのローカルファイル実行は対象になる)
     $installerPath = Join-Path $repoPath 'install.ps1'
     if ($Resume) {
-        powershell.exe -NoProfile -ExecutionPolicy Bypass -File $installerPath -Resume
+        powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$installerPath" -Resume
     } else {
-        powershell.exe -NoProfile -ExecutionPolicy Bypass -File $installerPath
+        powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$installerPath"
     }
     exit $LASTEXITCODE
 }
@@ -147,7 +154,13 @@ try {
 
         foreach ($job in @($nodeJob, $claudeJob)) {
             try {
-                Receive-Job -Job $job -ErrorAction Stop | ForEach-Object { Write-Host $_ }
+                Receive-Job -Job $job -ErrorAction Stop | ForEach-Object {
+                    Write-Host $_
+                    try {
+                        $ts = (Get-Date).ToString('yyyy-MM-dd HH:mm:ss')
+                        Add-Content -Path $script:LogPath -Value "$ts [INFO] $_" -Encoding UTF8 -ErrorAction SilentlyContinue
+                    } catch {}
+                }
             } catch {
                 Write-InstallLog "$($job.Name): $_" -IsError
             }

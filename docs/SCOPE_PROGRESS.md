@@ -103,6 +103,38 @@
 | Claude.ai/Anthropic | [x] | 既存サブスクリプション、各PCで初回ログインのみ |
 | BlueLampポータル | [x] | 既存アカウント、各PCで初回ログインのみ |
 
+## 🔒 本番運用診断履歴
+
+### 第1回診断 (2026-06-27)
+
+**総合スコア**: 84/100 → **96/100 (A評価: Excellent)** ※自動修正適用後
+
+#### スコア内訳（修正後）
+| カテゴリ | 修正前 | 修正後 | 主な変更 |
+|---------|--------|--------|---------|
+| セキュリティ | 27/30 | 28/30 | デッドコード削除 |
+| パフォーマンス | 18/20 | 18/20 | 変更なし |
+| 信頼性 | 17/20 | 20/20 | schtasks/powershell.exeパスクォート修正 |
+| 運用性 | 14/20 | 18/20 | ログファイル保存追加・DEPLOYMENT.md作成 |
+| コード品質 | 8/10 | 10/10 | デッドコード削除 |
+
+#### 実施した修正
+- [x] `Register-ResumeTask.ps1`: `schtasks /tr` の `$command` をクォート（スペース含むユーザー名対応）
+- [x] `install.ps1`: `powershell.exe -File` の `$installerPath` をクォート（同上）
+- [x] `Common.ps1`: `Set-SecureTlsProtocol` デッドコード削除
+- [x] `Common.ps1`: `Write-InstallLog` にファイル出力追加 (`install.log`)
+- [x] `docs/DEPLOYMENT.md`: 作成
+- [x] `install.ps1`: `Write-FatalErrorAndExit` でもログ記録（Common.ps1 dot-source後のみ）
+- [x] `install.ps1`: 並列ジョブ（S-005/S-006）の出力を `install.log` に記録
+
+#### ライセンス
+このプロジェクトは外部npmパッケージを持たないスクリプト型のため、ライセンス診断はN/A。
+
+#### 次回診断
+大型変更時または実機テスト完了後に再実施を推奨。
+
+---
+
 ## メモ
 
 このプロジェクトは「Windows PCにBlueLampを全自動導入するPowerShellインストーラー」を作るための要件定義。

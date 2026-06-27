@@ -13,7 +13,7 @@ function Register-ResumeTask {
     }
 
     $command = "powershell.exe -NoProfile -ExecutionPolicy Bypass -File `"$InstallScriptPath`" -Resume"
-    schtasks /create /tn 'BlueLampInstallerResume' /sc ONLOGON /tr $command /rl HIGHEST /f | Out-Null
+    schtasks /create /tn 'BlueLampInstallerResume' /sc ONLOGON /tr "$command" /rl HIGHEST /f | Out-Null
 
     if (-not (Test-ResumeTaskRegistered)) {
         # 登録確認に失敗した場合、再起動すると再開不能になるため再起動自体を中止する

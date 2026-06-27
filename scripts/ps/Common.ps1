@@ -2,6 +2,7 @@
 
 $script:StateDir = Join-Path $env:LOCALAPPDATA 'BlueLampInstaller'
 $script:StatePath = Join-Path $script:StateDir 'state.json'
+$script:LogPath = Join-Path $script:StateDir 'install.log'
 $script:WslUser = 'bluelamp'
 $script:WslBashEnvPath = "/home/$script:WslUser/.bluelamp_bash_env"
 # 汎用的な"Ubuntu"ではなく専用名にすることで、利用者が既に持つ別のUbuntu(WSL)環境と衝突しないようにする
@@ -13,10 +14,20 @@ function Write-InstallLog {
         [switch]$IsError
     )
     $prefix = '[BlueLampインストーラー]'
+    $level = if ($IsError) { 'ERROR' } else { 'INFO' }
     if ($IsError) {
         Write-Host "$prefix $Message" -ForegroundColor Red
     } else {
         Write-Host "$prefix $Message" -ForegroundColor Cyan
+    }
+    try {
+        if (-not (Test-Path $script:StateDir)) {
+            New-Item -ItemType Directory -Path $script:StateDir -Force | Out-Null
+        }
+        $timestamp = (Get-Date).ToString('yyyy-MM-dd HH:mm:ss')
+        Add-Content -Path $script:LogPath -Value "$timestamp [$level] $Message" -Encoding UTF8
+    } catch {
+        # ログ書き込み失敗はコンソール出力に影響させない
     }
 }
 
@@ -26,14 +37,6 @@ function Assert-Administrator {
     if (-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
         throw 'このスクリプトは管理者として実行する必要があります。PowerShellを「管理者として実行」で開き直してください。'
     }
-}
-
-function Set-SecureTlsProtocol {
-    # プロセス内のTLS既定値設定のみで対話確認の必要がないため、ShouldProcessは実装しない
-    [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '')]
-    param()
-    # GitHub Raw等の配布元はTLS1.2必須だが、古いWindows 10は既定でTLS1.2が無効なため明示する
-    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 }
 
 function Save-InstallState {
