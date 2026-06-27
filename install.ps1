@@ -17,7 +17,9 @@ function Write-FatalErrorAndExit {
         try {
             $ts = (Get-Date).ToString('yyyy-MM-dd HH:mm:ss')
             Add-Content -Path $script:LogPath -Value "$ts [ERROR] 失敗しました: $($ErrorRecord.Exception.Message)" -Encoding UTF8 -ErrorAction SilentlyContinue
-        } catch {}
+        } catch {
+            $null = $_
+        }
     }
     exit 1
 }
@@ -159,7 +161,9 @@ try {
                     try {
                         $ts = (Get-Date).ToString('yyyy-MM-dd HH:mm:ss')
                         Add-Content -Path $script:LogPath -Value "$ts [INFO] $_" -Encoding UTF8 -ErrorAction SilentlyContinue
-                    } catch {}
+                    } catch {
+                        $null = $_
+                    }
                 }
             } catch {
                 Write-InstallLog "$($job.Name): $_" -IsError

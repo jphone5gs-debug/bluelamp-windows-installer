@@ -27,7 +27,7 @@ function Write-InstallLog {
         $timestamp = (Get-Date).ToString('yyyy-MM-dd HH:mm:ss')
         Add-Content -Path $script:LogPath -Value "$timestamp [$level] $Message" -Encoding UTF8
     } catch {
-        # ログ書き込み失敗はコンソール出力に影響させない
+        $null = $_
     }
 }
 
