@@ -111,7 +111,7 @@ $commonShPath = Join-Path $wslDir 'common.sh'
 
 $wslParallelJobScript = {
     param($CommonPath, $ModulePath, $WslUser, $BashEnvPath, $NeedsBashEnv, $DistroName)
-    $content = (Get-Content -Raw -Path $CommonPath) + "`n" + (Get-Content -Raw -Path $ModulePath)
+    $content = ((Get-Content -Raw -Path $CommonPath) + "`n" + (Get-Content -Raw -Path $ModulePath)) -replace "`r`n", "`n"
     if ($NeedsBashEnv) {
         $content | wsl.exe -d $DistroName -u $WslUser -- env "BASH_ENV=$BashEnvPath" bash -s --
     } else {

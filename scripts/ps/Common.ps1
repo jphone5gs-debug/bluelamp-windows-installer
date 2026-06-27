@@ -112,7 +112,7 @@ function Invoke-WslScript {
     # common.shの内容を結合してから渡す。各wsl呼び出しは新規bashプロセスのため
     # 個別にsourceする手段がなく、結合が最も単純な共有方法となる
     $commonPath = Join-Path (Split-Path -Parent $ScriptPath) 'common.sh'
-    $content = (Get-Content -Raw -Path $commonPath) + "`n" + (Get-Content -Raw -Path $ScriptPath)
+    $content = ((Get-Content -Raw -Path $commonPath) + "`n" + (Get-Content -Raw -Path $ScriptPath)) -replace "`r`n", "`n"
 
     if ($NeedsBashEnv) {
         $content | wsl.exe -d $script:WslDistroName -u $script:WslUser -- env "BASH_ENV=$script:WslBashEnvPath" bash -s --

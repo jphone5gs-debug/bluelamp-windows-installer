@@ -57,7 +57,7 @@ BASHENV
 chown "$WSL_TARGET_USER:$WSL_TARGET_USER" "$USER_HOME/.bluelamp_bash_env"
 '@
 
-    $userSetupScript | wsl.exe -d $script:WslDistroName -u root -- env "WSL_TARGET_USER=$script:WslUser" bash -s --
+    ($userSetupScript -replace "`r`n", "`n") | wsl.exe -d $script:WslDistroName -u root -- env "WSL_TARGET_USER=$script:WslUser" bash -s --
     if ($LASTEXITCODE -ne 0) {
         throw "$($script:WslDistroName)内の非対話ユーザー作成に失敗しました (終了コード: $LASTEXITCODE)"
     }
