@@ -92,10 +92,12 @@ if (-not $PSScriptRoot) {
     } else {
         powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$installerPath"
     }
-    exit $LASTEXITCODE
+    # exit を使うと irm|iex のホストPowerShellウィンドウが閉じてしまうため使用しない
+    # if ($PSScriptRoot) ガードにより以降のメインコードはiexコンテキストでは実行されない
 }
 
-# --- ここから先は $PSScriptRoot が実ファイルパスとして存在する状態 ---
+# --- ここから先は $PSScriptRoot が実ファイルパスとして存在する状態（-File実行時のみ）---
+if (-not $PSScriptRoot) { return }
 
 $RepoRoot = $PSScriptRoot
 
