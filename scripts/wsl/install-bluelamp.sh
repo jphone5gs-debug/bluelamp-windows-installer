@@ -23,6 +23,15 @@ install_bluelamp_in_wsl() {
     local installed_path
     installed_path="$(command -v bluelamp1)"
     log_info "BlueLamp導入完了: ${installed_path}"
+
+    # wsl -d BlueLamp -- bluelamp1 のような非ログインシェルでも使えるよう
+    # /usr/local/bin にラッパーを作成する（nvm の PATH が読まれない環境向け）
+    log_info "bluelamp1 をシステム共通 PATH に登録しています..."
+    sudo tee /usr/local/bin/bluelamp1 > /dev/null << WRAPPER
+#!/usr/bin/env bash
+exec "${installed_path}" "\$@"
+WRAPPER
+    sudo chmod +x /usr/local/bin/bluelamp1
 }
 
 install_bluelamp_in_wsl
