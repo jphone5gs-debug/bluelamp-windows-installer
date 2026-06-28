@@ -23,8 +23,7 @@ install_bluelamp_in_wsl() {
         local installed_path
         installed_path="$(command -v bluelamp1)"
         log_info "bluelamp1 をシステム共通 PATH に登録しています..."
-        printf '#!/usr/bin/env bash\nexec "%s" "$@"\n' "${installed_path}" \
-            | sudo tee /usr/local/bin/bluelamp1 > /dev/null
+        printf '#!/usr/bin/env bash\nexec "%s" "$@"\n' "${installed_path}" | sudo tee /usr/local/bin/bluelamp1 > /dev/null
         sudo chmod +x /usr/local/bin/bluelamp1
     fi
 }

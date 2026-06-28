@@ -212,8 +212,13 @@ try {
         if ($LASTEXITCODE -eq 0) {
             Write-InstallLog 'Claude Codeは既にログイン済みです。'
         } else {
-            Write-InstallLog 'ブラウザでClaude Codeのログイン画面が開きます。ログインを完了してください。'
-            wsl.exe -d $script:WslDistroName -u $script:WslUser -- bash -l -c 'claude </dev/null || true'
+            Write-InstallLog '------------------------------------------------------------'
+            Write-InstallLog 'Claude Code の初回設定を行います:'
+            Write-InstallLog '  1. テーマを選択して Enter'
+            Write-InstallLog '  2. ブラウザでClaudeにログイン'
+            Write-InstallLog '  3. ログイン完了後、/exit と入力して Enter を押す'
+            Write-InstallLog '------------------------------------------------------------'
+            wsl.exe -d $script:WslDistroName -u $script:WslUser -- bash -l -c 'claude'
             wsl.exe -d $script:WslDistroName -u $script:WslUser -- test -f $credsFile
             if ($LASTEXITCODE -ne 0) {
                 throw 'Claude Codeのログインが完了していません。インストーラーを再実行してください。'
@@ -228,7 +233,7 @@ try {
             Write-InstallLog 'BlueLampは既にログイン済みです。'
         } else {
             Write-InstallLog 'ブラウザでBlueLampポータルのログイン画面が開きます。ログインを完了してください。'
-            wsl.exe -d $script:WslDistroName -u $script:WslUser -- bash -l -c 'bluelamp1 </dev/null || true'
+            wsl.exe -d $script:WslDistroName -u $script:WslUser -- bash -l -c 'bluelamp1'
             wsl.exe -d $script:WslDistroName -u $script:WslUser -- test -f $tokenFile
             if ($LASTEXITCODE -ne 0) {
                 throw 'BlueLampのログインが完了していません。インストーラーを再実行してください。'
