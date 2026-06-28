@@ -1,4 +1,4 @@
-﻿#Requires -Version 5.1
+#Requires -Version 5.1
 
 function Enable-WSLFeature {
     $wslEnabled = $false
@@ -21,27 +21,51 @@ function Enable-WSLFeature {
     }
 
     Write-InstallLog 'WSL2を有効化しています...'
-    # wsl --install はDISMより堅牢でソースファイルを自動解決する(Windows 10 21H2以降/Windows 11)
-    wsl.exe --install --no-distribution
-    if ($LASTEXITCODE -eq 0) {
+
+    # $ErrorActionPreference = 'Stop'環境ではネイティブコマンドのstderr出力が
+    # NativeCommandErrorとして捕捉されterminatingになる場合があるためtry-catchで包む
+    $wslInstallExitCode = 0
+    try {
+        wsl.exe --install --no-distribution
+        $wslInstallExitCode = $LASTEXITCODE
+    } catch {
+        $wslInstallExitCode = if ($LASTEXITCODE) { $LASTEXITCODE } else { 1 }
+    }
+
+    if ($wslInstallExitCode -eq 0) {
         return $true
     }
 
-    # wsl --installが0以外で終了。カーネル更新失敗でも機能自体は有効化される場合があるため再確認
+    # wsl --installが失敗: wsl --updateでWSLカーネルを更新してから機能状態を再確認する
+    Write-InstallLog 'WSLカーネル更新を試みています (wsl --update)...'
+    $wslUpdateExitCode = 0
     try {
-        $recheckWsl = Get-WindowsOptionalFeature -Online -FeatureName 'Microsoft-Windows-Subsystem-Linux'
-        $recheckVm = Get-WindowsOptionalFeature -Online -FeatureName 'VirtualMachinePlatform'
-        $wslAfter = $recheckWsl.State -in @('Enabled', 'EnablePending')
-        $vmAfter = $recheckVm.State -in @('Enabled', 'EnablePending')
-        if ($wslAfter -and $vmAfter) {
-            $needsRestart = ($recheckWsl.State -eq 'EnablePending') -or ($recheckVm.State -eq 'EnablePending')
-            Write-InstallLog "WSL機能は有効化されています$(if ($needsRestart) { '（再起動して続きを実行します）' })。"
-            return $needsRestart
-        }
-    } catch { $null = $_ }
+        wsl.exe --update
+        $wslUpdateExitCode = $LASTEXITCODE
+    } catch {
+        $wslUpdateExitCode = if ($LASTEXITCODE) { $LASTEXITCODE } else { 1 }
+    }
 
-    # フォールバック: wsl --installが利用できない旧Windows向け
-    Write-InstallLog 'Windows機能を直接有効化します(フォールバック)...'
+    if ($wslUpdateExitCode -eq 0) {
+        # wsl --update成功後、機能が有効化されているか再確認する
+        try {
+            $recheckWsl = Get-WindowsOptionalFeature -Online -FeatureName 'Microsoft-Windows-Subsystem-Linux'
+            $recheckVm = Get-WindowsOptionalFeature -Online -FeatureName 'VirtualMachinePlatform'
+            $wslAfter = $recheckWsl.State -in @('Enabled', 'EnablePending')
+            $vmAfter = $recheckVm.State -in @('Enabled', 'EnablePending')
+            if ($wslAfter -and $vmAfter) {
+                $needsRestart = ($recheckWsl.State -eq 'EnablePending') -or ($recheckVm.State -eq 'EnablePending')
+                Write-InstallLog "WSL機能は有効化されています$(if ($needsRestart) { '（再起動して続きを実行します）' })。"
+                return $needsRestart
+            }
+        } catch { $null = $_ }
+        # Windows 11ではWSLがパッケージ型でOptionalFeatureに現れない場合があるため再起動を促す
+        Write-InstallLog 'WSLカーネル更新完了。再起動して続きを実行します。'
+        return $true
+    }
+
+    # wsl --updateも失敗: 旧Windows/企業環境向けDISMフォールバック
+    Write-InstallLog 'Windows機能を直接有効化します (フォールバック)...'
     $restartNeeded = $false
     try {
         if (-not $wslEnabled) {
