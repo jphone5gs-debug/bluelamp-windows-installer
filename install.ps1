@@ -202,11 +202,40 @@ try {
     }
 
     if ($nextStep -eq 'S-008-009') {
-        # S-008/S-009は依存関係上は独立だが、対話的でコンソールを共有するため逐次実行する
-        Invoke-WslScript -ScriptPath (Join-Path $wslDir 'invoke-claude-login.sh') `
-            -FailureMessage 'Claude Codeのログインに失敗しました'
-        Invoke-WslScript -ScriptPath (Join-Path $wslDir 'invoke-bluelamp-login.sh') -NeedsBashEnv `
-            -FailureMessage 'BlueLampのログインに失敗しました'
+        # bash -l でログインシェルを起動することで .bashrc → nvm が読み込まれ
+        # claude/bluelamp1 が PATH に乗る。base64パイプを経由しないため
+        # 子プロセスによる stdin 消費・構文エラー問題が根本から起きない。
+
+        # S-008: Claude Code OAuth ログイン
+        $credsFile = "/home/$script:WslUser/.claude/.credentials.json"
+        wsl.exe -d $script:WslDistroName -u $script:WslUser -- test -f $credsFile
+        if ($LASTEXITCODE -eq 0) {
+            Write-InstallLog 'Claude Codeは既にログイン済みです。'
+        } else {
+            Write-InstallLog 'ブラウザでClaude Codeのログイン画面が開きます。ログインを完了してください。'
+            wsl.exe -d $script:WslDistroName -u $script:WslUser -- bash -l -c 'claude </dev/null || true'
+            wsl.exe -d $script:WslDistroName -u $script:WslUser -- test -f $credsFile
+            if ($LASTEXITCODE -ne 0) {
+                throw 'Claude Codeのログインが完了していません。インストーラーを再実行してください。'
+            }
+            Write-InstallLog 'Claude Codeのログインが完了しました。'
+        }
+
+        # S-009: BlueLamp ポータルログイン
+        $tokenFile = "/home/$script:WslUser/.musuhi/portal-token.enc"
+        wsl.exe -d $script:WslDistroName -u $script:WslUser -- test -f $tokenFile
+        if ($LASTEXITCODE -eq 0) {
+            Write-InstallLog 'BlueLampは既にログイン済みです。'
+        } else {
+            Write-InstallLog 'ブラウザでBlueLampポータルのログイン画面が開きます。ログインを完了してください。'
+            wsl.exe -d $script:WslDistroName -u $script:WslUser -- bash -l -c 'bluelamp1 </dev/null || true'
+            wsl.exe -d $script:WslDistroName -u $script:WslUser -- test -f $tokenFile
+            if ($LASTEXITCODE -ne 0) {
+                throw 'BlueLampのログインが完了していません。インストーラーを再実行してください。'
+            }
+            Write-InstallLog 'BlueLampのログインが完了しました。'
+        }
+
         $nextStep = 'S-010'
         Save-InstallState -NextStep $nextStep
     }
