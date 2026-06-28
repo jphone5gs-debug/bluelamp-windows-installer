@@ -112,12 +112,13 @@ function Invoke-WslScript {
     # common.shの内容を結合してから渡す。各wsl呼び出しは新規bashプロセスのため
     # 個別にsourceする手段がなく、結合が最も単純な共有方法となる
     $commonPath = Join-Path (Split-Path -Parent $ScriptPath) 'common.sh'
-    $content = ((Get-Content -Raw -Path $commonPath) + "`n" + (Get-Content -Raw -Path $ScriptPath)) -replace "`r`n", "`n"
-
+    $content = ((Get-Content -Raw -Path $commonPath) + "`n" + (Get-Content -Raw -Path $ScriptPath)) -replace "`r?`n", "`n"
+    # PowerShell 5.1のstdinパイプはCRLFを挿入するため、base64経由で安全に渡す
+    $contentB64 = [Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($content))
     if ($NeedsBashEnv) {
-        $content | wsl.exe -d $script:WslDistroName -u $script:WslUser -- env "BASH_ENV=$script:WslBashEnvPath" bash -s --
+        wsl.exe -d $script:WslDistroName -u $script:WslUser -- env "BASH_ENV=$script:WslBashEnvPath" bash -c "echo '$contentB64' | base64 -d | bash"
     } else {
-        $content | wsl.exe -d $script:WslDistroName -u $script:WslUser -- bash -s --
+        wsl.exe -d $script:WslDistroName -u $script:WslUser -- bash -c "echo '$contentB64' | base64 -d | bash"
     }
 
     if ($LASTEXITCODE -ne 0) {

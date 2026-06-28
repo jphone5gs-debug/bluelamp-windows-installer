@@ -111,11 +111,12 @@ $commonShPath = Join-Path $wslDir 'common.sh'
 
 $wslParallelJobScript = {
     param($CommonPath, $ModulePath, $WslUser, $BashEnvPath, $NeedsBashEnv, $DistroName)
-    $content = ((Get-Content -Raw -Path $CommonPath) + "`n" + (Get-Content -Raw -Path $ModulePath)) -replace "`r`n", "`n"
+    $content = ((Get-Content -Raw -Path $CommonPath) + "`n" + (Get-Content -Raw -Path $ModulePath)) -replace "`r?`n", "`n"
+    $contentB64 = [Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($content))
     if ($NeedsBashEnv) {
-        $content | wsl.exe -d $DistroName -u $WslUser -- env "BASH_ENV=$BashEnvPath" bash -s --
+        wsl.exe -d $DistroName -u $WslUser -- env "BASH_ENV=$BashEnvPath" bash -c "echo '$contentB64' | base64 -d | bash"
     } else {
-        $content | wsl.exe -d $DistroName -u $WslUser -- bash -s --
+        wsl.exe -d $DistroName -u $WslUser -- bash -c "echo '$contentB64' | base64 -d | bash"
     }
     if ($LASTEXITCODE -ne 0) {
         throw "WSL内スクリプトの実行に失敗しました (終了コード: $LASTEXITCODE): $ModulePath"

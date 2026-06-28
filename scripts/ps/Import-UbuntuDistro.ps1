@@ -57,7 +57,11 @@ BASHENV
 chown "$WSL_TARGET_USER:$WSL_TARGET_USER" "$USER_HOME/.bluelamp_bash_env"
 '@
 
-    ($userSetupScript -replace "`r`n", "`n") | wsl.exe -d $script:WslDistroName -u root -- env "WSL_TARGET_USER=$script:WslUser" bash -s --
+    # PowerShell 5.1はstdinパイプ経由でCRLFを挿入するため、base64経由で安全に渡す
+    $setupScriptB64 = [Convert]::ToBase64String(
+        [System.Text.Encoding]::UTF8.GetBytes(($userSetupScript -replace "`r?`n", "`n"))
+    )
+    wsl.exe -d $script:WslDistroName -u root -- env "WSL_TARGET_USER=$script:WslUser" bash -c "echo '$setupScriptB64' | base64 -d | bash"
     if ($LASTEXITCODE -ne 0) {
         throw "$($script:WslDistroName)内の非対話ユーザー作成に失敗しました (終了コード: $LASTEXITCODE)"
     }
