@@ -80,12 +80,15 @@ if (-not $PSScriptRoot) {
     # schtasks再開タスクと同じ-ExecutionPolicy Bypassで新規プロセスとして起動する
     # (irm | iexによる文字列実行自体は実行ポリシーの対象外だが、`&`でのローカルファイル実行は対象になる)
     $installerPath = Join-Path $repoPath 'install.ps1'
-    # irm|iex実行ではBOM不要だが、powershell.exe -File で日本語Windows(Shift-JIS既定)に
-    # ローカル実行させる際はBOMが必要。GitHub上はBOMなしのまま維持し、展開後に付与する
+    # 日本語WindowsのPowerShell 5.1はBOMなしUTF-8をShift-JISとして読む。
+    # GitHub上はBOMなしのまま維持し、展開後に全.ps1ファイルへBOMを付与する。
+    # Expand-ArchiveがBOMを除去する場合の防衛的処理も兼ねる。
     $bom = [byte[]](0xEF, 0xBB, 0xBF)
-    $rawBytes = [System.IO.File]::ReadAllBytes($installerPath)
-    if ($rawBytes[0] -ne 0xEF) {
-        [System.IO.File]::WriteAllBytes($installerPath, [byte[]]($bom + $rawBytes))
+    Get-ChildItem -Path $repoPath -Filter '*.ps1' -Recurse | ForEach-Object {
+        $bytes = [System.IO.File]::ReadAllBytes($_.FullName)
+        if ($bytes.Length -gt 0 -and $bytes[0] -ne 0xEF) {
+            [System.IO.File]::WriteAllBytes($_.FullName, [byte[]]($bom + $bytes))
+        }
     }
     if ($Resume) {
         powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$installerPath" -Resume
