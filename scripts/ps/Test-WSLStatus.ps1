@@ -1,11 +1,14 @@
-﻿#Requires -Version 5.1
+#Requires -Version 5.1
 
 function Test-WSLStatus {
+    $wslFeature = $null
+    $vmFeature = $null
     try {
         $wslFeature = Get-WindowsOptionalFeature -Online -FeatureName 'Microsoft-Windows-Subsystem-Linux'
         $vmFeature = Get-WindowsOptionalFeature -Online -FeatureName 'VirtualMachinePlatform'
     } catch {
-        throw "Windows機能の状態取得に失敗しました: $_"
+        # 取得失敗時は未有効として続行し、Enable-WSLFeatureに処理を委ねる
+        $null = $_
     }
 
     $ubuntuImported = $false
@@ -20,11 +23,12 @@ function Test-WSLStatus {
     }
 
     [pscustomobject]@{
-        WslFeatureEnabled = ($wslFeature.State -eq 'Enabled')
-        VmPlatformEnabled = ($vmFeature.State -eq 'Enabled')
+        WslFeatureEnabled = ($null -ne $wslFeature -and $wslFeature.State -eq 'Enabled')
+        VmPlatformEnabled = ($null -ne $vmFeature -and $vmFeature.State -eq 'Enabled')
         UbuntuImported    = [bool]$ubuntuImported
         # 既存の保留中再起動(他の操作起因)を検知するためのフラグ。
         # 今回の有効化操作自体が再起動を要するかは Enable-WSLFeature の戻り値が正とする
-        RestartNeeded     = ($wslFeature.State -like '*Pending') -or ($vmFeature.State -like '*Pending')
+        RestartNeeded     = ($null -ne $wslFeature -and $wslFeature.State -like '*Pending') -or
+                            ($null -ne $vmFeature -and $vmFeature.State -like '*Pending')
     }
 }
