@@ -1,17 +1,50 @@
-﻿#Requires -Version 5.1
+#Requires -Version 5.1
 
 function Import-UbuntuDistro {
+    # $ErrorActionPreference = 'Stop'環境でネイティブコマンドのstderrがNativeCommandErrorになるため
+    # wsl.exe呼び出しは全てtry-catchで保護する
+    $existing = ''
+    try {
+        $existing = (wsl.exe -l -v 2>$null) -replace "`0", ''
+    } catch { $null = $_ }
+
     $distroPattern = [regex]::Escape($script:WslDistroName)
-    $existing = (wsl.exe -l -v 2>$null) -replace "`0", ''
     if ($existing | Select-String -Pattern "^\*?\s*$distroPattern\s" -Quiet) {
         Write-InstallLog "$($script:WslDistroName)は既に導入済みです。"
         return
     }
 
-    # S-002のRestartNeeded誤検出により、WSLエンジン未初期化のままここに到達するケースがあるため再確認する
-    wsl.exe --status > $null 2>&1
-    if ($LASTEXITCODE -ne 0) {
-        throw 'WSL機能が未初期化です。再起動が必要な可能性があります。スクリプトを再実行してください。'
+    # WSLエンジンが動作可能か確認し、未初期化の場合はwsl --updateでカーネルを導入する
+    $wslStatusCode = 0
+    try {
+        wsl.exe --status > $null 2>&1
+        $wslStatusCode = $LASTEXITCODE
+    } catch {
+        $wslStatusCode = if ($LASTEXITCODE) { $LASTEXITCODE } else { 1 }
+    }
+
+    if ($wslStatusCode -ne 0) {
+        Write-InstallLog 'WSLカーネルを導入しています (wsl --update)...'
+        $wslUpdateCode = 0
+        try {
+            wsl.exe --update
+            $wslUpdateCode = $LASTEXITCODE
+        } catch {
+            $wslUpdateCode = if ($LASTEXITCODE) { $LASTEXITCODE } else { 1 }
+        }
+        if ($wslUpdateCode -ne 0) {
+            throw 'WSLカーネルの導入に失敗しました。管理者として再実行するか、Windows Updateを実施してから再試行してください。'
+        }
+        # wsl --update後に再確認
+        try {
+            wsl.exe --status > $null 2>&1
+            $wslStatusCode = $LASTEXITCODE
+        } catch {
+            $wslStatusCode = if ($LASTEXITCODE) { $LASTEXITCODE } else { 1 }
+        }
+        if ($wslStatusCode -ne 0) {
+            throw 'WSL機能が未初期化です。再起動後に再実行してください。'
+        }
     }
 
     # Canonical公式WSL rootfs配布元。バージョン固定(Ubuntu 24.04 LTS / noble)
