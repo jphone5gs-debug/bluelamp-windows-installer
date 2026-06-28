@@ -10,8 +10,8 @@ invoke_bluelamp_login() {
     fi
 
     log_info "ブラウザでBlueLampポータルのログイン画面が開きます。ログインを完了してください。"
-    # bluelamp1はInteractiveLoginを起動する。終了挙動はinvoke-claude-login.shと同様の前提(要実機確認)
-    bluelamp1 || true
+    # OAuth はブラウザで完了するため stdin は不要。</dev/null でログイン後のプロセスを即時終了させる
+    bluelamp1 </dev/null || true
 
     if [[ ! -f "${token_file}" ]]; then
         log_error "ログインが完了していません。ブラウザでログインを完了してから、インストーラーを再度実行してください。"

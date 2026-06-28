@@ -100,10 +100,6 @@ function Invoke-DownloadWithRetry {
 }
 
 function Invoke-WslScript {
-    # 対話処理(S-008/S-009)・非対話処理(S-007)とも標準出力はコンソールへ素通しする。
-    # スクリプト内容はstdin経由で渡すため、ユーザーの対話操作はブラウザ側で行われる前提
-    # (Claude Code OAuth・BlueLampポータルログインともURLを開いて完了する方式で、
-    # ターミナルへのキー入力を必要としない)。
     param(
         [Parameter(Mandatory)] [string]$ScriptPath,
         [switch]$NeedsBashEnv,
@@ -115,10 +111,14 @@ function Invoke-WslScript {
     $content = ((Get-Content -Raw -Path $commonPath) + "`n" + (Get-Content -Raw -Path $ScriptPath)) -replace "`r?`n", "`n"
     # PowerShell 5.1のstdinパイプはCRLFを挿入するため、base64経由で安全に渡す
     $contentB64 = [Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($content))
+    # echo|base64|bash パターンは bash がスクリプトを stdin から読むため、
+    # 子プロセス(claude/bluelamp1等)が残りのスクリプト内容を stdin から消費し
+    # bash が構文エラーになる。/tmp ファイル経由で実行することで回避する。
+    $tmpFile = '/tmp/bluelamp_wsl_run.sh'
     if ($NeedsBashEnv) {
-        wsl.exe -d $script:WslDistroName -u $script:WslUser -- env "BASH_ENV=$script:WslBashEnvPath" bash -c "echo '$contentB64' | base64 -d | bash"
+        wsl.exe -d $script:WslDistroName -u $script:WslUser -- bash -c "echo '$contentB64' | base64 -d > '$tmpFile' && env BASH_ENV='$($script:WslBashEnvPath)' bash '$tmpFile'; _rc=`$?; rm -f '$tmpFile'; exit `$_rc"
     } else {
-        wsl.exe -d $script:WslDistroName -u $script:WslUser -- bash -c "echo '$contentB64' | base64 -d | bash"
+        wsl.exe -d $script:WslDistroName -u $script:WslUser -- bash -c "echo '$contentB64' | base64 -d > '$tmpFile' && bash '$tmpFile'; _rc=`$?; rm -f '$tmpFile'; exit `$_rc"
     }
 
     if ($LASTEXITCODE -ne 0) {
