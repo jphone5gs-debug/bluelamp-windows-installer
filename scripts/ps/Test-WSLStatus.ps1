@@ -11,11 +11,12 @@ function Test-WSLStatus {
     $ubuntuImported = $false
     try {
         # wsl.exeはUTF-16LEで出力するため、PowerShellでキャプチャするとnull文字が混入する場合がある
+        # WSL未インストール環境ではwsl.exeが例外を投げる場合があるが、その場合はUbuntuImported=falseで継続する
         $distroList = (wsl.exe -l -v 2>$null) -replace "`0", ''
         $distroPattern = [regex]::Escape($script:WslDistroName)
         $ubuntuImported = ($distroList | Select-String -Pattern "^\*?\s*$distroPattern\s" -Quiet)
     } catch {
-        throw "wsl -l -v の実行に失敗しました: $_"
+        $null = $_
     }
 
     [pscustomobject]@{
